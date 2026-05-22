@@ -170,19 +170,26 @@ You can also send commands over serial:
 
 The `tools/` directory contains scripts for logging and plotting serial data.
 
-Example logging command:
+To capture data and plot it live, do not use the PlatformIO serial monitor.
+It occupies the serial port and is not the right workflow for live plotting.
+Instead, start the logger first, wait a few seconds so it can create the first
+log file entry, and then start the plotter.
+
+Example workflow:
 
 ```bash
 python tools/serial_logger.py --port auto --baud 115200 --inlet yes
 ```
 
-Example live plot command:
+After a short delay, in a second terminal:
 
 ```bash
-python tools/serial_plotter.py --port auto --baud 115200
+python tools/plot_from_log.py --logsdir logs --interval 1000
 ```
 
-Both scripts write CSV files into `logs/`.
+`serial_logger.py` writes CSV files into `logs/`, and `plot_from_log.py` reads
+the newest log file and refreshes the plot every second. If you want to plot a
+specific file, pass `--file logs/data_<timestamp>.csv` instead of `--logsdir`.
 
 ## Wiring Summary
 
