@@ -7,7 +7,7 @@ The firmware runs on an Arduino Nano using the `nanoatmega328new` PlatformIO tar
 - G4-4 diaphragm pump on pin D9
 - W6 piston pump MOSFET gate on pin D10
 
-It also reads an MPX5500 pressure sensor on A3 and optionally a BMP280 over I2C.
+It also reads an MPX5500 pressure sensor on A3 and a BMP280 over I2C.
 
 ## What This Repository Contains
 
