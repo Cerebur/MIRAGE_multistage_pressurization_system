@@ -1,40 +1,47 @@
 # Pressurisation Prototype
 
-Arduino-based dual-pump pressurisation controller built for use in Visual Studio Code with the PlatformIO extension.
+This repository contains two related Arduino/PlatformIO test firmware trees for the pressurisation prototype, plus a small set of host-side logging and plotting tools.
 
-The firmware runs on an Arduino Nano using the `nanoatmega328new` PlatformIO target and controls two pumps with 20 kHz PWM:
+The code is now split into:
 
-- G4-4 diaphragm pump on pin D9
-- W6 piston pump MOSFET gate on pin D10
+- `old_tests/` for the earlier test firmware
+- `new_tests/` for the newer test firmware that uses flight hardware sensors and adds programmable automatic modes
 
-It also reads an MPX5500 pressure sensor on A3 and a BMP280 over I2C.
+Both directories follow the same general layout and are used in the same way. The main differences are the hardware stack and the control model:
 
-## What This Repository Contains
+- `old_tests/` focuses on manual and cyclic pump control with the earlier sensor setup
+- `new_tests/` integrates the flight hardware sensor stack and adds `programme` / `auto` modes for scripted automatic operation
 
-- `src/main.cpp` - firmware entry point
-- `src/MPX5500/` - MPX5500 pressure sensor helper
-- `tools/` - host-side logging and plotting scripts
-- `logs/` - example CSV output from serial logging
+## Repository Layout
 
-## Required Hardware
+- `old_tests/src/main.cpp` - legacy test firmware entry point
+- `old_tests/src/MPX5500/` - legacy pressure sensor helper code
+- `old_tests/logs/` - example serial log output
+- `old_tests/tools/` - legacy host-side logging and plotting scripts
+- `new_tests/src/main.cpp` - current test firmware entry point
+- `new_tests/src/sensor_readout/` - sensor abstraction used by the new tests
+- `new_tests/src/programmes/` - programmable automatic mode definitions and framework
+- `new_tests/logs/` - example serial log output
+- `new_tests/tools/` - host-side logging and plotting scripts
 
-Minimum hardware required to run the firmware:
+## New Versus Old Tests
 
-- Arduino Nano with ATmega328P using the new bootloader
-  - PlatformIO board target: `nanoatmega328new`
-- G4-4 diaphragm pump
-  - PWM control signal connected to D9
-- W6 piston pump
-  - MOSFET gate control connected to D10
-- MPX5500 pressure sensor
-  - Analog input connected to A3
+The older test firmware is the simpler baseline. It keeps the dual-pump control workflow and serial interaction, and it uses the earlier sensor mix centered on the MPX5500 pressure sensor and BMP280, with optional DHT11 support.
 
-Optional hardware:
+The newer test firmware keeps the same overall pump-control structure but extends it in two important ways:
 
-- BMP280 temperature/pressure sensor on I2C
-  - SDA on A4
-  - SCL on A5
-  - Address `0x76` or `0x77`
+- It reads the flight hardware sensor stack through `sensor_readout/` using sensors such as TMP1075, ABP2, MS5803, SHT45, and BMP280
+- It supports programmable automatic sequences through `programmes/`, including a selectable automatic mode
+
+## Common Hardware
+
+Both test trees target an Arduino Nano using the `nanoatmega328new` PlatformIO board definition and drive the pumps with 20 kHz PWM:
+
+- G4-4 diaphragm pump on D9
+- W6 piston pump MOSFET gate on D10
+- Solenoid valve on a dedicated digital output that differs between the old and new test builds
+
+The exact sensor set depends on which test tree you open. The newer tests use the flight hardware sensors, while the older tests use the earlier pressure-sensor-oriented setup.
 
 ## Software Requirements
 
@@ -71,61 +78,11 @@ If you do not want to use Git:
 4. Extract the ZIP file to a local folder.
 5. Open that folder in Visual Studio Code.
 
-## Installing The Software
+## Working With The Repository
 
-### 1. Install Git
+Each test directory is a separate PlatformIO project. Open `old_tests/` or `new_tests/` directly in Visual Studio Code, depending on which firmware variant you want to build.
 
-- Windows: install Git from `https://git-scm.com/downloads`
-- macOS: install Xcode Command Line Tools or use Homebrew
-- Linux: install from your package manager
-
-Verify the installation:
-
-```bash
-git --version
-```
-
-### 2. Install Visual Studio Code
-
-Download and install Visual Studio Code from:
-
-```text
-https://code.visualstudio.com/
-```
-
-### 3. Install PlatformIO
-
-In Visual Studio Code:
-
-1. Open the Extensions view.
-2. Search for `PlatformIO IDE`.
-3. Install the PlatformIO extension.
-4. Restart VS Code if prompted.
-
-PlatformIO will create its own toolchain and download the required compiler and libraries when the project is opened or built for the first time.
-
-### 4. Install Python 3 for the helper tools
-
-If you want to use the scripts in `tools/`, install Python 3 and then install the packages:
-
-```bash
-python -m pip install pyserial matplotlib
-```
-
-If your system uses `python3` instead of `python`, use:
-
-```bash
-python3 -m pip install pyserial matplotlib
-```
-
-## Opening The Project In VS Code
-
-1. Start Visual Studio Code.
-2. Select `File -> Open Folder...`
-3. Open the root folder of this repository.
-4. Wait for PlatformIO to finish initializing the project.
-
-The project is configured in [`platformio.ini`](platformio.ini) for:
+The shared PlatformIO configuration in each directory targets:
 
 - board: `nanoatmega328new`
 - framework: `arduino`
@@ -133,17 +90,16 @@ The project is configured in [`platformio.ini`](platformio.ini) for:
 
 ## Building And Uploading
 
-### From Visual Studio Code
+From Visual Studio Code:
 
-1. Open the PlatformIO sidebar.
-2. Use `Build` to compile the firmware.
-3. Connect the Arduino Nano by USB.
-4. Use `Upload` to flash the firmware to the board.
-5. Use `Monitor` to open the serial console at `115200` baud.
+1. Open the desired test folder.
+2. Wait for PlatformIO to initialize the project.
+3. Use `Build` to compile the firmware.
+4. Connect the Arduino Nano by USB.
+5. Use `Upload` to flash the firmware to the board.
+6. Use `Monitor` to open the serial console at `115200` baud.
 
-### From the PlatformIO terminal
-
-You can also use the command line from inside the project directory:
+From the PlatformIO terminal inside either test folder:
 
 ```bash
 pio run
@@ -153,12 +109,9 @@ pio device monitor --baud 115200
 
 ## Serial Usage
 
-When the board boots, it prints a short help message and asks whether the inlet is choked. After that it emits machine-readable lines:
+Both test trees print a help message on boot and then emit machine-readable lines for logging. The newer firmware adds more serial commands for automatic mode control, while the older firmware keeps the simpler manual/cyclic command set.
 
-- `META,...` for metadata
-- `DATA,...` for periodic sensor samples
-
-You can also send commands over serial:
+The common patterns are:
 
 - `<n>` sets both pumps to `<n>%`
 - `d<n>` sets only the diaphragm pump
@@ -166,14 +119,13 @@ You can also send commands over serial:
 - `s` or `status` prints the current status
 - `h` or `help` prints the command list
 
+The newer firmware also accepts automatic/programme commands such as `auto`, `programme`, `program`, and `manual`.
+
 ## Host-Side Logging And Plotting
 
-The `tools/` directory contains scripts for logging and plotting serial data.
+The `tools/` directory in each test tree contains scripts for logging and plotting serial data.
 
-To capture data and plot it live, do not use the PlatformIO serial monitor.
-It occupies the serial port and is not the right workflow for live plotting.
-Instead, start the logger first, wait a few seconds so it can create the first
-log file entry, and then start the plotter.
+To capture data and plot it live, do not use the PlatformIO serial monitor. It occupies the serial port and is not the right workflow for live plotting. Instead, start the logger first, wait a few seconds so it can create the first log file entry, and then start the plotter.
 
 Example workflow:
 
@@ -187,20 +139,4 @@ After a short delay, in a second terminal:
 python tools/plot_from_log.py --logsdir logs --interval 1000
 ```
 
-`serial_logger.py` writes CSV files into `logs/`, and `plot_from_log.py` reads
-the newest log file and refreshes the plot every second. If you want to plot a
-specific file, pass `--file logs/data_<timestamp>.csv` instead of `--logsdir`.
-
-## Wiring Summary
-
-- D9 - G4-4 diaphragm pump PWM control
-- D10 - W6 piston pump MOSFET gate drive
-- A3 - MPX5500 analog pressure sensor
-- A4 - BMP280 SDA, if installed
-- A5 - BMP280 SCL, if installed
-
-## Notes
-
-- The firmware uses Timer1 PWM on D9 and D10, so those pins are reserved for pump control.
-- The BMP280 is optional. If it is not present, the firmware continues running and prints a warning.
-- The code assumes a 5 V Arduino environment unless you adapt the hardware and calibration constants.
+`serial_logger.py` writes CSV files into `logs/`, and `plot_from_log.py` reads the newest log file and refreshes the plot every second. If you want to plot a specific file, pass `--file logs/data_<timestamp>.csv` instead of `--logsdir`.
