@@ -16,7 +16,7 @@ Both directories follow the same general layout and are used in the same way. Th
 
 - `old_tests/src/main.cpp` - legacy test firmware entry point
 - `old_tests/src/MPX5500/` - legacy pressure sensor helper code
-- `old_tests/logs/` - example serial log output
+- `old_tests/logs/` - older serial log output
 - `old_tests/tools/` - legacy host-side logging and plotting scripts
 - `new_tests/src/main.cpp` - current test firmware entry point
 - `new_tests/src/sensor_readout/` - sensor abstraction used by the new tests
