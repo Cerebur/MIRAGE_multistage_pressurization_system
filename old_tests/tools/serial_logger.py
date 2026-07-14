@@ -30,7 +30,7 @@ def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument('--port', default='auto')
     p.add_argument('--baud', type=int, default=115200)
-    p.add_argument('--inlet', default='unknown', help='Value to send when prompted (yes/no)')
+    p.add_argument('--description', default='unknown', help='Value to send when prompted (yes/no)')
     p.add_argument('--logsdir', default='logs')
     return p.parse_args()
 
@@ -96,13 +96,13 @@ def main():
 
                 # if device prompts for inlet choked, respond automatically
                 if ('Is the inlet choked' in line) or line.lower().startswith('is the inlet choked'):
-                    val = args.inlet[0].lower()
+                    val = args.description[0].lower()
                     if val == 'y':
                         tosend = 'y\n'
                     elif val == 'n':
                         tosend = 'n\n'
                     else:
-                        tosend = (args.inlet + '\n')
+                        tosend = (args.description + '\n')
                     print('Sending inlet response:', tosend.strip())
                     ser.write(tosend.encode())
                     continue
